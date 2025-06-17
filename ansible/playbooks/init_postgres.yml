@@ -1,0 +1,22 @@
+- name: Copy schema file to tmp directory
+  copy:
+    src: files/create_schema.sql
+    dest: /tmp/create_schema.sql
+
+- name: Initialize PostgreSQL schema if missing
+  hosts: local
+  tasks:
+
+    - name: Check if traffic_incidents table exists
+      shell: |
+        docker exec postgres psql -U admin -d NycTrafficStreamDatabase -tAc \
+        "SELECT to_regclass('public.traffic_incidents');"
+      register: table_check
+      changed_when: false
+
+    - name: Create schema only if table is missing
+      shell: |
+        docker exec -i postgres psql -U admin -d NycTrafficStreamDatabase < /tmp/create_schema.sql
+      when: table_check.stdout == ""
+      args:
+        executable: /bin/bash
