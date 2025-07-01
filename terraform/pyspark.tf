@@ -33,8 +33,8 @@ resource "docker_container" "spark_NYC_master" {
   }
 
   ports {
-    internal = 8080
-    external = 8080
+    internal = 8081
+    external = 8081
   }
 
   restart = "always"
@@ -54,8 +54,8 @@ resource "docker_container" "spark_worker1" {
   ]
 
   ports {
-    internal = 8081
-    external = 8081
+    internal = 8082
+    external = 8082
   }
 
   

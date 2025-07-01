@@ -35,7 +35,7 @@ resource "docker_container" "kafka" {
   env = [
     "KAFKA_BROKER_ID=1",
     "KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181",
-    "KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092",
+    "KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092",
     "KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1",
     "KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT",
     "KAFKA_AUTO_CREATE_TOPICS_ENABLE=true"
@@ -53,19 +53,22 @@ resource "docker_container" "schema_registry" {
   name  = "schema-registry"
   image = docker_image.schema_registry.latest
 
+  networks_advanced {
+    name = docker_network.pipeline_network.name
+  }
+
   env = [
     "SCHEMA_REGISTRY_HOST_NAME=schema-registry",
     "SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS=PLAINTEXT://kafka:9092"
   ]
 
   ports {
-    internal = 8081
-    external = 8081
+    internal = 8083
+    external = 8083
   }
 
-  networks_advanced {
-    name = docker_network.pipeline_network.name
-  }
+  
+  depends_on = [docker_container.kafka]
 }
 
 #confluent control center
@@ -84,12 +87,14 @@ resource "docker_container" "control_center" {
 
   env = [
      "CONTROL_CENTER_BOOTSTRAP_SERVERS=PLAINTEXT://kafka:9092",
-     "CONTROL_CENTER_SCHEMA_REGISTRY_URL=http://schema-registry:8081"
+     "CONTROL_CENTER_SCHEMA_REGISTRY_URL=http://schema-registry:8083"
   ]
 
   ports {
     internal = 9021
     external = 9021
   }
+
+  depends_on = [ docker_container.schema_registry ]
 }
 

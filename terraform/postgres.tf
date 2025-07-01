@@ -23,6 +23,6 @@ resource "docker_container" "postgres" {
 
     volumes {
       container_path = "/var/lib/postgresql/data"
-      host_path      = "${path.module}/data/postgres"
+      host_path      = "D:/a-new-project-todiscover/terraform/data/postgres"
     }
 }

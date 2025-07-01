@@ -21,7 +21,7 @@ resource "docker_container" "cassandra" {
     ]
     volumes {
       container_path = "/var/lib/cassandra"
-      host_path      = "${path.module}/data/cassandra"
+      host_path      = "D:/a-new-project-todiscover/terraform/data/cassandra"
     }
 
   # if we want our cassandra to wait for an other container for the mean time it does not need to wait
