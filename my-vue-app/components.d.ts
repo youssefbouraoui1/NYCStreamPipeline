@@ -8,8 +8,14 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    Accidents: typeof import('./src/components/Accidents.vue')['default']
+    Barchart: typeof import('./src/components/charts/Barchart.vue')['default']
+    BoxInfo: typeof import('./src/components/charts/BoxInfo.vue')['default']
     HelloWorld: typeof import('./src/components/HelloWorld.vue')['default']
+    Linechart: typeof import('./src/components/charts/Linechart.vue')['default']
     Navbar: typeof import('./src/components/Navbar.vue')['default']
+    RouterLink: typeof import('vue-router')['RouterLink']
+    RouterView: typeof import('vue-router')['RouterView']
     Sidebar: typeof import('./src/components/Sidebar.vue')['default']
   }
 }

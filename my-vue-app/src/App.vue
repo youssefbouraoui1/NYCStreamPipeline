@@ -1,7 +1,8 @@
 <script setup>
 import { ref } from 'vue'; 
 import HelloWorld from './components/HelloWorld.vue'
-import Sidebar from './components/Sidebar.vue'
+import Sidebar from './components/Sidebar.vue';
+import General from './pages/accidents/General.vue';
 
 const sidebarOpen = ref(true);
 const darkMode = ref(false);
@@ -15,6 +16,8 @@ const darkMode = ref(false);
         {{ darkMode ? 'Light Mode' : 'Dark Mode' }}
       </button>
 
+      
+
       <router-view />
     </main>
 
@@ -22,7 +25,22 @@ const darkMode = ref(false);
 </template>
 
 <style scoped>
+.app-layout{
+  display: flex;
+}
+
+.sidebar {
+  flex-shrink: 0; 
+}
+
+.full-width{
+  width: 100%;
+}
+
 .main-content {
+  flex-grow: 1; 
+  overflow-y: auto; 
+  padding: 1rem; 
   background: var(--bg-color);
   color: var(--text-color);
 }

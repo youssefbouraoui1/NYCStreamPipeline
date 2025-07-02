@@ -27,18 +27,18 @@ export default{
     },
     props:{
         title: {
-            type:Object,
+            type:String,
             required:true
         },
         current:{
-            type:Number,
+            type:[Number,String],
             required:true
         },
         past :{
-            type:Number,
+            type:[Number,String],
         },
         footerTitle :{
-            type:Object
+            type:String
         }
 
     },
@@ -47,9 +47,12 @@ export default{
       return this.past !== undefined && this.past !== null;
     },
     percentageDifference() {
-      if (!this.hasPast || this.past === 0) return 0;
+      if (!this.hasPast || this.past === 0 ) return 0;
+      if(typeof(this.current)==='string'){
+        return this.past;
+      }else{
       const diff = ((this.current - this.past) / this.past) * 100;
-      return diff.toFixed(2); 
+      return diff.toFixed(2); }
     },
   },
 }
@@ -63,7 +66,7 @@ export default{
   border-radius: 8px;
   padding: 1rem;
   text-align: center;
-  max-width: 200px;
+  max-width: 400px;
 }
 
 .title {
