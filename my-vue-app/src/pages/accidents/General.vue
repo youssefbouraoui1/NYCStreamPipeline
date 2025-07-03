@@ -10,8 +10,12 @@
             :footerTitle="box.footer" 
             />
         </div>
-        <div class="">
-
+        <div class="lineCharts">
+            <Linechart
+               v-if="lineChartData"
+               :chartData="lineChartData"
+             />
+            
         </div>
     </div>
 
@@ -21,18 +25,20 @@
   import { ref, onMounted } from 'vue';
   import Linechart from '../../components/charts/Linechart.vue';
   import BoxInfo from '../../components/charts/BoxInfo.vue';
-  import { fetchAccidentsCount,fetchInjuriesCount,fetchKilledCount,fetchPeakTime } from '../../services/GeneralStatisticsServices';
+  import { fecthAccidentCountInjuredAndKilledOverTime, fetchAccidentsCount,fetchInjuriesCount,fetchKilledCount,fetchPeakTime } from '../../services/GeneralStatisticsServices';
   
-  const boxesData = ref([])
+  const boxesData = ref([]);
+  const lineChartData = ref(null);
 
   onMounted(async()=>{
 
     try{
-        const [accidents,injuries,killed,peak] = await Promise.all([
+        const [accidents,injuries,killed,peak,lineData] = await Promise.all([
             fetchAccidentsCount(),
             fetchInjuriesCount(),
             fetchKilledCount(),
-            fetchPeakTime()
+            fetchPeakTime(),
+            fecthAccidentCountInjuredAndKilledOverTime()
         ]);
 
         boxesData.value = [
@@ -40,7 +46,10 @@
             {title:'Injuries Count',current:injuries.current,past:injuries.past, footer: 'Compared to last month'},
             {title:'Accidents Count',current:killed.current,past:killed.past, footer: 'Compared to last month'},
             {title:'Accidents Peak Time',current:peak.current,past:peak.past, footer: 'Compared to last month'}
-        ]
+        ];
+
+        lineChartData.value=lineData
+
     }catch(error){
         console.error('Error fetching box data:', error);
     }
@@ -56,5 +65,11 @@
     gap:1rem;
     max-width: 1400px;
     margin: 0 auto;
+}
+
+.lineCharts{
+    display: grid;
+    grid-template-columns: repeat(1,1fr);
+    gap: 1rem;
 }
 </style>
