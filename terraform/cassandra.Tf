@@ -1,4 +1,4 @@
-resource "docker_image" "cassandra" {
+/* resource "docker_image" "cassandra" {
   name = "cassandra:latest"
 }
 
@@ -26,4 +26,4 @@ resource "docker_container" "cassandra" {
 
   # if we want our cassandra to wait for an other container for the mean time it does not need to wait
   # depends_on = [docker_container.zookeeper] 
-}
+} */

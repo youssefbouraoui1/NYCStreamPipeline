@@ -1,6 +1,6 @@
-import { Kafka, logLevel } from 'kafkajs';
+const { Kafka, logLevel } = require('kafkajs');
 
-const KAFKA_BROKER_ADDRESS = process.env.KAFKA_BROKER_ADDRESS || 'kafka:9092';
+const KAFKA_BROKER_ADDRESS = process.env.KAFKA_BROKER_ADDRESS || 'localhost:9092';
 const KAFKA_TOPIC = process.env.KAFKA_TOPIC || 'crashes';
 
 const kafka = new Kafka({
@@ -20,7 +20,7 @@ async function connectProducer() {
   }
 }
 
-export const kafkaProducer = async (data) => {
+const kafkaProducer = async (data) => {
   await connectProducer();
 
   const messages = Array.isArray(data)
@@ -34,3 +34,5 @@ export const kafkaProducer = async (data) => {
 
   console.log(`Sent ${messages.length} message(s) to Kafka`);
 };
+
+module.exports = {kafkaProducer}

@@ -43,7 +43,11 @@ export default {
       new ChartJS(context, {
         type: 'line',
         data: this.chartData,
-        options: this.chartOptions
+        options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      ...this.chartOptions
+    }
       })
     }
   }
@@ -51,5 +55,18 @@ export default {
 </script>
 
 <style scoped>
-/* Optional styles for the chart container */
+.chart-container {
+  width: 100%;
+  max-width: 100%;
+  height: 400px;      
+  position: relative;
+  overflow-x: hidden; 
+}
+
+canvas {
+  width: 101% !important;
+  height: 500px !important;
+  max-height: 500px;
+  display: block;
+}
 </style>

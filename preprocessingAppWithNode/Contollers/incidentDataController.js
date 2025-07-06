@@ -1,7 +1,7 @@
 const validateIncident = require('../Services/validateData');
-const kafkaProducer = require('../Services/kafkaProducer');
+const { kafkaProducer } = require('../Services/kafkaProducer');
 
-export const validateAndSendData = async (req, res) => {
+const validateAndSendData = async (req, res) => {
   const body = req.body;
 
   let incidents = [];
@@ -22,11 +22,16 @@ export const validateAndSendData = async (req, res) => {
       validatedIncidents.push(valid);
     }
 
-    await kafkaProducer.sendMessage(validatedIncidents); 
+    await kafkaProducer(validatedIncidents);
 
     res.status(200).json({ message: ` ${validatedIncidents.length} incident(s) accepted and sent to Kafka` });
   } catch (e) {
     console.error(" Validation or Kafka error:", e.message);
     res.status(400).json({ error: "Invalid data", details: e.message });
   }
+};
+
+
+module.exports = {
+  validateAndSendData
 };

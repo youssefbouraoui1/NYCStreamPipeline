@@ -20,7 +20,6 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
 
 app.use(logger('dev'));
-app.use(credentials)
 //cors
 app.use(cors(corsOptions));
 app.use(express.urlencoded({ extended: true }));
@@ -47,7 +46,7 @@ app.use(function(err, req, res, next) {
   res.render('error');
 });
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0',() => {
   console.log(`🚀 Express API listening on port ${PORT}`);
 });
 
