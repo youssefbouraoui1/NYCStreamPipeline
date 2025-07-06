@@ -1,6 +1,6 @@
 const { Kafka, logLevel } = require('kafkajs');
 
-const KAFKA_BROKER_ADDRESS = process.env.KAFKA_BROKER_ADDRESS || 'localhost:9092';
+const KAFKA_BROKER_ADDRESS = 'kafka:9092';
 const KAFKA_TOPIC = process.env.KAFKA_TOPIC || 'crashes';
 
 const kafka = new Kafka({
@@ -21,6 +21,8 @@ async function connectProducer() {
 }
 
 const kafkaProducer = async (data) => {
+  console.log("Kafka will connect to broker:", KAFKA_BROKER_ADDRESS);
+
   await connectProducer();
 
   const messages = Array.isArray(data)
