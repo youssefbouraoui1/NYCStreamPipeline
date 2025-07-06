@@ -13,6 +13,12 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  --bg-color: #f5f6fa;
+  --text-color: #222;
+  --card-bg: #fff;
+  --sidebar-bg: #888888; /* much darker for clear separation */
+  --sidebar-text: #222;
 }
 
 .dark-theme {
@@ -23,4 +29,11 @@
   --button-bg: #333333;
   --button-text: #f0f0f0;
 }
+
+html, body {
+  background: var(--bg-color, #18191a);
+  transition: background 0.3s;
+}
+
+ 
 

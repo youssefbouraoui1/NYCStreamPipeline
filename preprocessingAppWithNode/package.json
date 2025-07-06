@@ -2,7 +2,6 @@
   "name": "preprocessingappwithnode",
   "version": "1.0.0",
   "main": "index.js",
-  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
@@ -12,9 +11,16 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "dotenv": "^16.5.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "debug": "^4.4.1",
+    "dotenv": "^16.6.1",
     "express": "^5.1.0",
+    "http-errors": "^2.0.0",
     "kafkajs": "^2.2.4",
-    "preprocessingappwithnode": "file:"
+    "morgan": "^1.10.0",
+    "preprocessingappwithnode": "file:",
+    "pug": "^3.0.3",
+    "uuid": "^11.1.0"
   }
 }
