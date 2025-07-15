@@ -1,8 +1,6 @@
 <script setup>
 import { ref } from 'vue'; 
-import HelloWorld from './components/HelloWorld.vue'
 import Sidebar from './components/Sidebar.vue';
-import General from './pages/accidents/General.vue';
 
 const sidebarOpen = ref(true);
 const darkMode = ref(false);

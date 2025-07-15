@@ -1,6 +1,6 @@
 const { Kafka, logLevel } = require('kafkajs');
 
-const KAFKA_BROKER_ADDRESS = 'localhost:9092';
+const KAFKA_BROKER_ADDRESS = 'kafka:9092';
 const KAFKA_TOPIC = process.env.KAFKA_TOPIC || 'crashes';
 
 const kafka = new Kafka({
