@@ -7,7 +7,8 @@
 } */
 
 resource "docker_image" "spark" {
-  name = "bitnami/spark:latest"
+  name = "pyspark_etl:latest"
+  
 }
 
 resource "docker_container" "spark_NYC_master" {

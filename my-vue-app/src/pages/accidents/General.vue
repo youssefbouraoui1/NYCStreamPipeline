@@ -11,10 +11,15 @@
             />
         </div>
         <div class="lineCharts">
+            <div class="lineChartBox">
+            <span>
+                Number Of Accidents Over time
+            </span>
             <Linechart
                v-if="lineChartData"
                :chartData="lineChartData"
              />
+             </div>
             
         </div>
     </div>
@@ -71,5 +76,14 @@
     display: grid;
     grid-template-columns: repeat(1,1fr);
     gap: 1rem;
+    margin-top: 10px;
+}
+
+.lineChartBox{
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
 }
 </style>

@@ -10,7 +10,10 @@ declare module 'vue' {
   export interface GlobalComponents {
     Accidents: typeof import('./src/components/Accidents.vue')['default']
     Barchart: typeof import('./src/components/charts/Barchart.vue')['default']
+    BoxFactors: typeof import('./src/components/BoxFactors.vue')['default']
     BoxInfo: typeof import('./src/components/charts/BoxInfo.vue')['default']
+    DropDownListAccidentGeneral: typeof import('./src/components/charts/DropDownListAccidentGeneral.vue')['default']
+    DropDownListLineChart: typeof import('./src/components/charts/DropDownListLineChart.vue')['default']
     HelloWorld: typeof import('./src/components/HelloWorld.vue')['default']
     Linechart: typeof import('./src/components/charts/Linechart.vue')['default']
     Navbar: typeof import('./src/components/Navbar.vue')['default']
