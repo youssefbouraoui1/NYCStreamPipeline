@@ -22,7 +22,7 @@ resource "docker_container" "spark_NYC_master" {
   env = [
     "SPARK_MODE=master",
     "KAFKA_BROKER=kafka:9092",
-    "KAFKA_TOPIC=raw_incidents",
+    "KAFKA_TOPIC=crashes",
     "PG_URL=jdbc:postgresql://postgres:5432/NycTrafficStreamDatabase",
     "PG_USER=admin",
     "PG_PASSWORD=admin123"
