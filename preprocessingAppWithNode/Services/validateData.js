@@ -13,6 +13,8 @@ function validateData(data) {
     "collision_id", "vehicle_type_code1", "vehicle_type_code2", "vehicle_type_code_3"
   ];
 
+  console.log("data : ", data)
+
   for (let field of requiredFields) {
     if (!(field in data)) {
       return `Missing required field: ${field}`;
@@ -34,8 +36,8 @@ function validateData(data) {
 
 
   for (let field of numFields) {
-    if (parseInt(data[field])) {
-      return field + "must be a number"
+    if (isNaN(parseInt(data[field]))) {
+      return `${field} must be a number`;
     }
   }
 

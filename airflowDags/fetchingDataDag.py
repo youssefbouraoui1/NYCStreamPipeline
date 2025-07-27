@@ -24,22 +24,14 @@ def fetch_and_send():
     response = requests.get(NYC_API)
     if response.status_code != 200:
         raise Exception("Failed to fetch data")
-    
+
     data = response.json()
     print(f"✅ Fetched {len(data)} records")
 
-    def fetch_and_send():
-        response = requests.get(NYC_API)
-        if response.status_code != 200:
-            raise Exception("Failed to fetch data")
-    
-        data = response.json()
-        print(f"✅ Fetched {len(data)} records")
+    batch = []
 
-        batch = []
-
-        for incident in data:
-            mapped = {
+    for incident in data:
+        mapped = {
             "timestamp": f"{incident.get('crash_date', '')}T{incident.get('crash_time', '00:00')}:00Z",
             "crash_date": incident.get('crash_date',''),
             "crash_time": incident.get('crash_time', '00:00'),
@@ -50,14 +42,14 @@ def fetch_and_send():
             "injured_persons": int(incident.get("number_of_persons_injured", 0)),
             "killed_persons": int(incident.get("number_of_persons_killed", 0)),
             "vehicle_type": incident.get("vehicle_type_code1", "UNKNOWN")
-            }
-            batch.append(mapped)
+        }
+        batch.append(mapped)
 
-    
-        res = requests.post(EXPRESS_API, json={"data": batch})
-        if res.status_code != 200:
-            raise Exception(f"Failed to send batch: {res.status_code} - {res.text}")
-        print("Sent full batch to Express API")
+    res = requests.post(EXPRESS_API, json={"data": batch})
+    if res.status_code != 200:
+        raise Exception(f"❌ Failed to send batch: {res.status_code} - {res.text}")
+    print("✅ Sent full batch to Express API")
+
 
 
     

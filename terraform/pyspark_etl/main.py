@@ -93,12 +93,23 @@ def write_to_postgres(table_name):
 
 df_vehicle = df_json \
     .where(col("vehicle_types").isNotNull()) \
-    .withColumn("exploded", posexplode("vehicle_types")) \
     .select(
-        col("vehicle_type_id").alias("vehicle_id"),     
-        col("exploded.col").alias("vehicle_type"),      
-        (col("exploded.pos") + 1).alias("vehicle_position")  
+        col("vehicle_type_id").alias("vehicle_id"),
+        posexplode("vehicle_types").alias("vehicle_position", "vehicle_type")
+    ) \
+    .select(
+        "vehicle_id",
+        "vehicle_type",
+        (col("vehicle_position") + 1).alias("vehicle_position")
     )
+query = df_vehicle.writeStream \
+    .format("console") \
+    .outputMode("append") \
+    .option("truncate", False) \
+    .start()
+
+query.awaitTermination()
+
 
 
 

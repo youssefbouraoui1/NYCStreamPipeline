@@ -30,10 +30,9 @@ CREATE TABLE IF NOT EXISTS dim_location (
 );
 
 CREATE TABLE IF NOT EXISTS dim_vehicle (
-    vehicle_id UUID ,
+    vehicle_id UUID PRIMARY KEY,
     vehicle_type TEXT,
-    vehicle_position INT ,
-    PRIMARY KEY (vehicle_id, vehicle_position)
+    vehicle_position INT 
 );
 
 CREATE TABLE IF NOT EXISTS dim_contributing_factor (
