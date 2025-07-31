@@ -61,7 +61,7 @@ df_kafka = spark.readStream \
     .format("kafka") \
     .option("kafka.bootstrap.servers", KAFKA_BROKER) \
     .option("subscribe", KAFKA_TOPIC) \
-    .option("startingOffsets", "latest") \
+    .option("startingOffsets", "earliest") \
     .load()
 
 logger.info("Kafka stream created")
@@ -79,6 +79,8 @@ from pyspark.sql.functions import explode, sha2, concat_ws,to_date,date_format, 
 
 def write_to_postgres(table_name):
     def _write(batch_df, batch_id):
+        print(f"Writing batch {batch_id} to {table_name}")
+        batch_df.show(truncate=False)
         batch_df.write \
             .format("jdbc") \
             .option("url", os.getenv("PG_URL")) \
@@ -102,23 +104,21 @@ df_vehicle = df_json \
         "vehicle_type",
         (col("vehicle_position") + 1).alias("vehicle_position")
     )
-query = df_vehicle.writeStream \
+""" query = df_vehicle.writeStream \
     .format("console") \
     .outputMode("append") \
     .option("truncate", False) \
-    .start()
+    .start() """
+    
+logger.info("beggining writing vehicle")
 
-query.awaitTermination()
-
-
-
-
-df_vehicle.writeStream \
+vehicle_write_query = df_vehicle.writeStream \
     .foreachBatch(write_to_postgres("dim_vehicle")) \
-    .outputMode("update") \
+    .outputMode("append") \
     .start()
 
-# now let us go to date dimension date
+logger.info("finishing writing vehhicle and starting with date")
+
 
 df_date = df_json.select(  to_timestamp("timestamp", "yyyy-MM-dd'T'HH:mm:ssX").alias("date_id"),
     to_date("crash_date", "yyyy-MM-dd").alias("crash_date"),
@@ -128,10 +128,13 @@ df_date = df_json.select(  to_timestamp("timestamp", "yyyy-MM-dd'T'HH:mm:ssX").a
     year(to_date("crash_date", "yyyy-MM-dd")).alias("year")
 ).dropDuplicates(["date_id"])
 
-df_date.writeStream \
+date_write_query = df_date.writeStream \
     .foreachBatch(write_to_postgres("dim_date")) \
-    .outputMode("update") \
+    .outputMode("append") \
     .start()
+    
+    
+logger.info("finished with date")
 
 df_location = df_json.select(
     col("location_id"),
@@ -140,9 +143,13 @@ df_location = df_json.select(
     col("on_street_name"),
     col("cross_street_name"),
     col("off_street_name")
-).dropna(subset=["borough", "on_street_name"])
+).dropna(subset=["borough", "on_street_name"]).dropDuplicates()
 
-df_location = df_location.dropDuplicates()
+location_write_query = df_location.writeStream \
+    .foreachBatch(write_to_postgres("dim_location")) \
+    .outputMode("append") \
+    .start()
+logger.info("finished with location")
 
 
 
@@ -152,14 +159,17 @@ df_factors = df_json.select(
     "factor_position", col("factor_position_zero_based") + 1
 ).withColumn(
     "factor_id", expr("uuid()")
-).select("factor_id", "factor_description", "factor_position")
+).select("factor_id", "factor_description", "factor_position")\
+    .dropna().dropDuplicates(["factor_description", "factor_position"])
 
-df_factors = df_factors.dropna().dropDuplicates(["factor_description", "factor_position"])
-
-df_factors.writeStream \
+factors_write_query = df_factors.writeStream \
     .foreachBatch(write_to_postgres("dim_contributing_factor")) \
-    .outputMode("update") \
+    .outputMode("append") \
     .start()
+
+logger.info("Finished writing contributing factors dimension")
+
+logger.info("starting with incidents fact table")
 
 df_fact_incidents = df_json.select(
     col("incident_id"),
@@ -177,7 +187,7 @@ df_fact_incidents = df_json.select(
     col("number_of_cyclist_killed")
 ).withColumn("number_of_incidents", lit(1))
 
-df_fact_incidents.writeStream \
+fact_incidents_write_query = df_fact_incidents.writeStream \
     .foreachBatch(write_to_postgres("fact_incidents")) \
     .outputMode("append") \
     .start()
@@ -205,7 +215,7 @@ def write_mv_incidents_by_borough_month(batch_df, batch_id):
         .mode("overwrite") \
         .save()
 
-agg_borough_month_df.writeStream \
+agg_borough_month_query = agg_borough_month_df.writeStream \
     .foreachBatch(write_mv_incidents_by_borough_month) \
     .outputMode("complete") \
     .start()
@@ -229,7 +239,7 @@ def write_mv_top_streets_by_injuries(batch_df, batch_id):
         .mode("overwrite") \
         .save()
 
-agg_top_streets_df.writeStream \
+mv_top_streets_by_injuries_query=agg_top_streets_df.writeStream \
     .foreachBatch(write_mv_top_streets_by_injuries) \
     .outputMode("complete") \
     .start()
@@ -257,10 +267,11 @@ def write_mv_vehicle_type_incidents(batch_df, batch_id):
         .mode("overwrite") \
         .save()
 
-agg_vehicle_type_df.writeStream \
+agg_vehicle_type_query = agg_vehicle_type_df.writeStream \
     .foreachBatch(write_mv_vehicle_type_incidents) \
     .outputMode("complete") \
     .start()
+
 
 agg_borough_hour_df = df_json.select(
     col("borough"),
@@ -289,7 +300,7 @@ def write_mv_incidents_by_borough_hour(batch_df, batch_id):
         .mode("overwrite") \
         .save()
 
-agg_borough_hour_df.writeStream \
+borough_hour_query = agg_borough_hour_df.writeStream \
     .foreachBatch(write_mv_incidents_by_borough_hour) \
     .outputMode("complete") \
     .start()
@@ -304,4 +315,13 @@ query = df_json.writeStream \
 
 logger.info("Main query started. Waiting for termination...")
 
+vehicle_write_query.awaitTermination()
+date_write_query.awaitTermination()
+location_write_query.awaitTermination()
+factors_write_query.awaitTermination()
+fact_incidents_write_query.awaitTermination()
+agg_borough_month_query.awaitTermination()
+agg_vehicle_type_query.awaitTermination()
+mv_top_streets_by_injuries_query.awaitTermination()
+borough_hour_query.awaitTermination()
 query.awaitTermination()
