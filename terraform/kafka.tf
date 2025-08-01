@@ -55,7 +55,7 @@ resource "docker_container" "kafka" {
 
 #for confluent
 
-resource "docker_image" "schema_registry" {
+/* resource "docker_image" "schema_registry" {
   name = "confluentinc/cp-schema-registry:7.4.0"
 }
 
@@ -114,3 +114,4 @@ resource "docker_container" "control_center" {
   depends_on = [docker_container.schema_registry]
 }
 
+ */

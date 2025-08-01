@@ -13,6 +13,7 @@ WORKDIR /app
 COPY main.py .
 COPY config.env .
 COPY start.sh .
+COPY test.py .
 
 RUN dos2unix start.sh && chmod +x start.sh
 
