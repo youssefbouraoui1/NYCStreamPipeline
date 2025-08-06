@@ -2,3 +2,4 @@ apache/
 frontend/node_modules
 
 terraform/.terraform
+terraform/data
