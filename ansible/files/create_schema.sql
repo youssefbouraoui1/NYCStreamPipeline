@@ -37,9 +37,10 @@ CREATE TABLE IF NOT EXISTS dim_vehicle (
 );
 
 CREATE TABLE IF NOT EXISTS dim_contributing_factor (
-    factor_id UUID PRIMARY KEY,  
+    factor_id UUID ,  
     factor_description TEXT,
-    factor_position INT  
+    factor_position INT  ,
+    PRIMARY KEY (factor_id,factor_position)
 );
 
 CREATE TABLE IF NOT EXISTS fact_incidents (
