@@ -176,7 +176,7 @@ except KeyboardInterrupt:
 dim_date.writeStream\
     .format("console")\
     .option("truncate",False)\
-    .outputmode("append")\
+    .outputMode("append")\
     .start().awaitTermination()
     
     
@@ -189,8 +189,12 @@ dim_factors = df_json\
                         col('factor_position')
                     ).dropDuplicates(['cont_factors_id','factor_position'])
 
-dim_factors_write_query = dim_factors.writeStream()\
-                                      .foreachBatch(write_to_postgres("dim_contributing_factor"))
+dim_factors_write_query = dim_factors.writeStream\
+                          .foreachBatch(write_to_postgres("public.dim_contributing_factor"))\
+                          .option('checkpointLocation',"/tmp/checkpoints/dim_contributing_factor")\
+                          .start()
                     
 try:
-    
+    dim_factors_write_query.awaitTermination()
+except KeyboardInterrupt:
+    dim_factors_write_query.stop()
