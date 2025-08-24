@@ -1,6 +1,7 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import from_json, col
+from pyspark.sql.functions import from_json, col,to_timestamp, to_date, date_format,year, month, hour
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, ArrayType
+from pyspark.sql.functions import explode, sha2, concat_ws,dayofweek,posexplode, lit, expr, sum, size, count
 import os
 import logging
 import uuid
@@ -81,7 +82,6 @@ print(f"URL: '{PG_URL}'")
 logger.info("JSON parsing configured")
 
 
-from pyspark.sql.functions import explode, sha2, concat_ws,to_date,date_format, year, month, dayofweek,to_timestamp,posexplode, hour, lit, expr, sum, size, count
 
 def write_to_postgres(table_name):
     def _write(batch_df, batch_id):
@@ -147,3 +147,29 @@ except KeyboardInterrupt:
 logger.info("finishing writing vehhicle and starting with date")
 
 
+dim_date = df_json\
+                    .withColumn("date_id",to_timestamp("timestamp"))\
+                    .withColumn("crash_date_parsed", to_date("crash_date", "yyyy-MM-dd")) \
+                    .withColumn("day_of_week", date_format("date_id", "EEEE")) \
+                    .withColumn("month_name", date_format("date_id", "MMMM")) \
+                    .withColumn("hour_of_day",hour("date_id"))\
+                    .withColumn("year",year("date_id"))\
+                    .select(
+                        col("date_id").alias("date_id"),
+                        col("crash_date_parsed").alias("crash_date"),
+                        col("day_of_week").alias("day_of_week"),
+                        col("month_name").alias("month"),
+                        col("hour_of_day"),
+                        col("year")
+                    ).dropDuplicates(["date_id"])
+                    
+dim_date_write_query = dim_date.writeStream\
+                       .foreachBatch(write_to_postgres("public.dim_date"))\
+                       .option("checkpointLocation", "/tmp/checkpoints/dim_date") \
+                       .start()
+
+dim_date.writeStream\
+    .format("console")\
+    .option("truncate",False)\
+    .outputmode("append")\
+    .start().awaitTermination()
