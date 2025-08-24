@@ -22,7 +22,7 @@ incident_schema = StructType([
     StructField("cross_street_name", StringType()),
     StructField("vehicle_type_id", StringType()),
     StructField("vehicle_types", ArrayType(StringType())),
-     StructField("cont_factors_id", StringType()),
+    StructField("cont_factors_id", StringType()),
     StructField("contributing_factors", ArrayType(StringType())),
     StructField("number_of_persons_injured", IntegerType()),
     StructField("number_of_persons_killed", IntegerType()),
@@ -167,9 +167,30 @@ dim_date_write_query = dim_date.writeStream\
                        .foreachBatch(write_to_postgres("public.dim_date"))\
                        .option("checkpointLocation", "/tmp/checkpoints/dim_date") \
                        .start()
+    
+try:
+    dim_date_write_query.awaitTermination()
+except KeyboardInterrupt:
+    dim_date_write_query.stop()
 
 dim_date.writeStream\
     .format("console")\
     .option("truncate",False)\
     .outputmode("append")\
     .start().awaitTermination()
+    
+    
+dim_factors = df_json\
+                    .select(col('cont_factors_id'),
+                            posexplode('contributing_factors').alias('factor_position','factor_description'))\
+                    .select(
+                        col('cont_factors_id'),
+                        col('factor_description'),
+                        col('factor_position')
+                    ).dropDuplicates(['cont_factors_id','factor_position'])
+
+dim_factors_write_query = dim_factors.writeStream()\
+                                      .foreachBatch(write_to_postgres("dim_contributing_factor"))
+                    
+try:
+    
