@@ -167,3 +167,9 @@ dim_date_write_query = dim_date.writeStream\
                        .foreachBatch(write_to_postgres("public.dim_date"))\
                        .option("checkpointLocation", "/tmp/checkpoints/dim_date") \
                        .start()
+
+dim_date.writeStream\
+    .format("console")\
+    .option("truncate",False)\
+    .outputmode("append")\
+    .start().awaitTermination()
