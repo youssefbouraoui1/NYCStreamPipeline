@@ -34,7 +34,7 @@ incident_schema = StructType([
     StructField("number_of_pedestrians_killed", IntegerType())
 ])
 
-# Get environment variables with defaults
+DEBUG = True
 KAFKA_BROKER = "kafka:9092"
 KAFKA_TOPIC = "crashes"
 PG_URL =  "jdbc:postgresql://postgres:5432/NycTrafficStreamDatabase"
@@ -199,8 +199,8 @@ try:
 except KeyboardInterrupt:
     dim_factors_write_query.stop()
     
-
-dim_location = df_json\
+if DEBUG:
+    dim_location = df_json\
                .select(col("location_id"),
                     col("borough"),
                     col("zip_code"),
