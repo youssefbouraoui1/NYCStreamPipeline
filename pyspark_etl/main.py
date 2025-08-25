@@ -198,3 +198,23 @@ try:
     dim_factors_write_query.awaitTermination()
 except KeyboardInterrupt:
     dim_factors_write_query.stop()
+    
+
+dim_location = df_json\
+               .select(col("location_id"),
+                    col("borough"),
+                    col("zip_code"),
+                    col("on_street_name"),
+                    col("off_street_name"),
+                    col("cross_street_name")).dropDuplicates(["location_id"])
+                     
+dim_location.writeStream.format("console").option("truncate",False).outputMode("append").start().awaitTermination()
+
+dim_location_write_query = dim_location.writeStream\
+                            .foreachBatch(write_to_postgres("public.dim_location"))\
+                            .option('checkpointLocation',"/tmp/checkpoints/dim_location")\
+                            .start()
+try:
+    dim_location_write_query.awaitTermination()
+except KeyboardInterrupt:
+    dim_location_write_query.stop()
