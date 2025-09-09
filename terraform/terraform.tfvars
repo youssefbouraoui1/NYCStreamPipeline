@@ -1,0 +1,1 @@
+postgres_data_path = "/home/youssef/projects/NYCStreamPipeline/terraform/data/postgres"

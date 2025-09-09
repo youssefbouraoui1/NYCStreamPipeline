@@ -1,5 +1,8 @@
 apache/
 frontend/node_modules
+.idea/
 
 terraform/.terraform
 terraform/data
+terraform/.*.*.*.*
+terraform/.*.*.*

@@ -1,5 +1,5 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import from_json, col,to_timestamp, to_date, date_format,year, month, hour
+from pyspark.sql.functions import from_json, col,to_timestamp, to_date, date_format,year, month, hour, regexp_replace, when, regexp_extract, concat, lit, lpad, length, ascii, substring
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, ArrayType
 from pyspark.sql.functions import explode, sha2, concat_ws,dayofweek,posexplode, lit, expr, sum, size, count
 import os
@@ -39,7 +39,7 @@ KAFKA_BROKER = "kafka:9092"
 KAFKA_TOPIC = "crashes"
 PG_URL =  "jdbc:postgresql://postgres:5432/NycTrafficStreamDatabase"
 PG_USER = "admin"
-PG_PASSWORD =  "admin123"
+PG_PASSWORD = "admin123"
 
 logger.info(f"Connecting to Kafka broker: {KAFKA_BROKER}")
 logger.info(f"Subscribing to Kafka topic: {KAFKA_TOPIC}")
@@ -52,6 +52,8 @@ spark = SparkSession.builder \
         "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1"
     ])) \
     .getOrCreate()
+    
+spark.conf.set("spark.sql.legacy.timeParserPolicy", "LEGACY")
 
 
 
@@ -105,116 +107,125 @@ def write_to_postgres(table_name):
 
 
 
-df_vehicle = df_json \
-    .where(col("vehicle_types").isNotNull()) \
-    .select(
-        col("vehicle_type_id").alias("vehicle_id"),
-        posexplode("vehicle_types").alias("vehicle_position", "vehicle_type")
-    ) \
-    .select(
-        "vehicle_id",
-        "vehicle_type",
-        (col("vehicle_position") + 1).alias("vehicle_position")
-    ).dropDuplicates(["vehicle_id"])
+def process_batch(batch_df, batch_id):
+    print(f"\n=== Batch {batch_id} ===")
+    batch_df.show(truncate=False)
+
+    print(f"\n=== Batch {batch_id} - Inspecting timestamp_clean ===")
+    
+
+    df_vehicle = batch_df \
+        .where(col("vehicle_types").isNotNull()) \
+        .select(
+            col("vehicle_type_id").alias("vehicle_id"),
+            posexplode("vehicle_types").alias("vehicle_position", "vehicle_type")
+        ) \
+        .select("vehicle_id", "vehicle_type", (col("vehicle_position") + 1).alias("vehicle_position")) \
+        .dropDuplicates(["vehicle_id"])
+
+    df_vehicle.write \
+        .format("jdbc") \
+        .option("url", PG_URL) \
+        .option("dbtable", "public.dim_vehicle") \
+        .option("user", PG_USER) \
+        .option("password", PG_PASSWORD) \
+        .option("driver", "org.postgresql.Driver") \
+        .option("sslmode", "disable") \
+        .option("stringtype", "unspecified") \
+        .mode("append") \
+        .save()
+    
+    df_clean = batch_df.withColumn(
+    "timestamp_clean",
+    regexp_replace(
+        regexp_replace(
+            "timestamp",
+            r"(\d{4}-\d{2}-\d{2})T\d{2}:\d{2}:\d{2}\.\d{3}T(\d{1,2}):(\d{2}:\d{2})Z",
+            "$1 $2:$3"
+        ),
+        r"(\d{4}-\d{2}-\d{2}) (\d):(\d{2}:\d{2})",
+        "$1 0$2:$3"
+    )
+    )
+    
+    print(f"\n=== Batch {batch_id} - Fixed timestamp_clean ===")
+    df_clean.select("timestamp", "timestamp_clean").show(truncate=False, n=50)
+
+    df_clean.select("timestamp_clean", length("timestamp_clean"), substring("timestamp_clean", 10, 1).alias("char_at_10")).show()
+
+
+    dim_date = df_clean \
+        .withColumn("date_id", to_timestamp("timestamp_clean", "yyyy-MM-dd H:mm:ss")) \
+        .withColumn("crash_date_parsed", to_date("timestamp_clean", "yyyy-MM-dd")) \
+        .withColumn("day_of_week", date_format("date_id", "EEEE")) \
+        .withColumn("month_name", date_format("date_id", "MMMM")) \
+        .withColumn("hour_of_day", hour("date_id")) \
+        .withColumn("year", year("date_id")) \
+        .select(
+            col("date_id"),
+            col("crash_date_parsed").alias("crash_date"),
+            col("day_of_week"),
+            col("month_name").alias("month"),
+            col("hour_of_day"),
+            col("year")
+        ).dropDuplicates(["date_id"])
+    
+    print("Batch ID:", batch_id)
+    print("Count before writing dim_date:", dim_date.count())
+    dim_date.show(truncate=False)
+    print("dim_date count:", dim_date.count())
+
+    dim_date.write \
+        .format("jdbc") \
+        .option("url", PG_URL) \
+        .option("dbtable", "public.dim_date") \
+        .option("user", PG_USER) \
+        .option("password", PG_PASSWORD) \
+        .option("driver", "org.postgresql.Driver") \
+        .option("sslmode", "disable") \
+        .option("stringtype", "unspecified") \
+        .mode("append") \
+        .save()
+
+    dim_factors = batch_df \
+        .select(col("cont_factors_id"), posexplode("contributing_factors").alias("factor_position", "factor_description")) \
+        .select("cont_factors_id", "factor_description", "factor_position") \
+        .dropDuplicates(["cont_factors_id", "factor_position"])
+
+    dim_factors.write \
+        .format("jdbc") \
+        .option("url", PG_URL) \
+        .option("dbtable", "public.dim_contributing_factor") \
+        .option("user", PG_USER) \
+        .option("password", PG_PASSWORD) \
+        .option("driver", "org.postgresql.Driver") \
+        .option("sslmode", "disable") \
+        .option("stringtype", "unspecified") \
+        .mode("append") \
+        .save()
+
+    dim_location = batch_df \
+        .select("location_id", "borough", "zip_code", "on_street_name", "off_street_name", "cross_street_name") \
+        .dropDuplicates(["location_id"])
+
+    dim_location.write \
+        .format("jdbc") \
+        .option("url", PG_URL) \
+        .option("dbtable", "public.dim_location") \
+        .option("user", PG_USER) \
+        .option("password", PG_PASSWORD) \
+        .option("driver", "org.postgresql.Driver") \
+        .option("sslmode", "disable") \
+        .option("stringtype", "unspecified") \
+        .mode("append") \
+        .save()
+
+    print(f"Batch {batch_id} processed successfully.")
+
 
 query = df_json.writeStream \
-    .format("console") \
-    .option("truncate", False) \
-    .outputMode("append") \
+    .foreachBatch(process_batch) \
+    .option("checkpointLocation", "/tmp/checkpoints/all_dimensions") \
     .start()
 
-df_vehicle.writeStream \
-    .format("console") \
-    .option("truncate", False) \
-    .outputMode("append") \
-    .start()
-
-
-logger.info("beggining writing vehicle")
-
-vehicle_write_query = df_vehicle.writeStream \
-    .foreachBatch(write_to_postgres("public.dim_vehicle")) \
-    .option("checkpointLocation", "/tmp/checkpoints/vehicle") \
-    .start()
-
-try:
-    query.awaitTermination()
-    vehicle_write_query.awaitTermination()
-except KeyboardInterrupt:
-    query.stop()
-    vehicle_write_query.stop()
-
-logger.info("finishing writing vehhicle and starting with date")
-
-
-dim_date = df_json\
-                    .withColumn("date_id",to_timestamp("timestamp"))\
-                    .withColumn("crash_date_parsed", to_date("crash_date", "yyyy-MM-dd")) \
-                    .withColumn("day_of_week", date_format("date_id", "EEEE")) \
-                    .withColumn("month_name", date_format("date_id", "MMMM")) \
-                    .withColumn("hour_of_day",hour("date_id"))\
-                    .withColumn("year",year("date_id"))\
-                    .select(
-                        col("date_id").alias("date_id"),
-                        col("crash_date_parsed").alias("crash_date"),
-                        col("day_of_week").alias("day_of_week"),
-                        col("month_name").alias("month"),
-                        col("hour_of_day"),
-                        col("year")
-                    ).dropDuplicates(["date_id"])
-                    
-dim_date_write_query = dim_date.writeStream\
-                       .foreachBatch(write_to_postgres("public.dim_date"))\
-                       .option("checkpointLocation", "/tmp/checkpoints/dim_date") \
-                       .start()
-    
-try:
-    dim_date_write_query.awaitTermination()
-except KeyboardInterrupt:
-    dim_date_write_query.stop()
-
-dim_date.writeStream\
-    .format("console")\
-    .option("truncate",False)\
-    .outputMode("append")\
-    .start().awaitTermination()
-    
-    
-dim_factors = df_json\
-                    .select(col('cont_factors_id'),
-                            posexplode('contributing_factors').alias('factor_position','factor_description'))\
-                    .select(
-                        col('cont_factors_id'),
-                        col('factor_description'),
-                        col('factor_position')
-                    ).dropDuplicates(['cont_factors_id','factor_position'])
-
-dim_factors_write_query = dim_factors.writeStream\
-                          .foreachBatch(write_to_postgres("public.dim_contributing_factor"))\
-                          .option('checkpointLocation',"/tmp/checkpoints/dim_contributing_factor")\
-                          .start()
-                    
-try:
-    dim_factors_write_query.awaitTermination()
-except KeyboardInterrupt:
-    dim_factors_write_query.stop()
-    
-if DEBUG:
-    dim_location = df_json\
-               .select(col("location_id"),
-                    col("borough"),
-                    col("zip_code"),
-                    col("on_street_name"),
-                    col("off_street_name"),
-                    col("cross_street_name")).dropDuplicates(["location_id"])
-                     
-dim_location.writeStream.format("console").option("truncate",False).outputMode("append").start().awaitTermination()
-
-dim_location_write_query = dim_location.writeStream\
-                            .foreachBatch(write_to_postgres("public.dim_location"))\
-                            .option('checkpointLocation',"/tmp/checkpoints/dim_location")\
-                            .start()
-try:
-    dim_location_write_query.awaitTermination()
-except KeyboardInterrupt:
-    dim_location_write_query.stop()
+query.awaitTermination()

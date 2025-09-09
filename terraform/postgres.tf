@@ -1,3 +1,8 @@
+variable "postgres_data_path" {
+  description = "Path on host for PostgreSQL data"
+  type        = string
+}
+
 resource "docker_image" "postgres" {
     name = "postgres:latest"
 }
@@ -12,7 +17,7 @@ resource "docker_container" "postgres" {
 
     ports {
        internal = 5432
-       external = 5432
+       external = 5433
     }
 
     env = [
@@ -23,6 +28,6 @@ resource "docker_container" "postgres" {
 
     volumes {
       container_path = "/var/lib/postgresql/data"
-      host_path      = "D:/a-new-project-todiscover/terraform/data/postgres"
+      host_path      = var.postgres_data_path
     }
 }
